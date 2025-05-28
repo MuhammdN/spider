@@ -15,7 +15,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<SocialApp> selectedApps = [];
-
   final List<Color> legColors = [
     Colors.blue,
     Colors.red,
@@ -27,57 +26,104 @@ class _HomeScreenState extends State<HomeScreen> {
     Colors.green,
   ];
 
+  // Login function that can be reused
+  Future<bool> _authenticateUser(String email, String password) async {
+    // Simulate API call delay
+    await Future.delayed(const Duration(seconds: 1));
+
+    // Basic validation - in real app, this would call your authentication API
+    if (email.isNotEmpty && password.isNotEmpty) {
+      return true;
+    }
+    return false;
+  }
+
   Future<bool> _showLoginDialog(BuildContext context, String appName) async {
+    final emailController = TextEditingController();
+    final passwordController = TextEditingController();
+    bool obscurePassword = true;
+    bool isLoading = false;
+    String? errorMessage;
+
     return await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (context) {
-        final emailController = TextEditingController();
-        final passwordController = TextEditingController();
-        bool obscurePassword = true;
-
         return StatefulBuilder(
           builder: (context, setState) {
             return Dialog(
               backgroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Close Button (X)
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: GestureDetector(
-                        onTap: () => Navigator.of(context).pop(false),
-                        child: const Icon(Icons.close, color: Colors.black),
-                      ),
+                    // Header with close button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Login to $appName',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(context).pop(false),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 16),
+
+                    // Error message if any
+                    if (errorMessage != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Text(
+                          errorMessage!,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
 
                     // Email field
-                    TextField(
+                    TextFormField(
                       controller: emailController,
                       decoration: InputDecoration(
                         labelText: 'Email',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 14),
                       ),
+                      keyboardType: TextInputType.emailAddress,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                    // Password field with eye toggle
-                    TextField(
+                    // Password field with visibility toggle
+                    TextFormField(
                       controller: passwordController,
                       obscureText: obscurePassword,
                       decoration: InputDecoration(
                         labelText: 'Password',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 14),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            obscurePassword ? Icons.visibility_off : Icons.visibility,
+                            obscurePassword
+                                ? Icons.visibility_off
+                                : Icons.visibility,
                             color: Colors.grey,
                           ),
                           onPressed: () {
@@ -88,24 +134,57 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
-                    // Gradient Log In Button
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(true),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF416C), Color(0xFFFF4B2B)],
+                    // Login button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.pinkAccent,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Center(
-                          child: Text(
-                            'Log In',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        onPressed: isLoading ? null : () async {
+                          if (emailController.text.isEmpty ||
+                              passwordController.text.isEmpty) {
+                            setState(() {
+                              errorMessage = 'Please enter both email and password';
+                            });
+                            return;
+                          }
+
+                          setState(() {
+                            isLoading = true;
+                            errorMessage = null;
+                          });
+
+                          final isAuthenticated = await _authenticateUser(
+                            emailController.text,
+                            passwordController.text,
+                          );
+
+                          if (isAuthenticated) {
+                            Navigator.of(context).pop(true);
+                          } else {
+                            setState(() {
+                              isLoading = false;
+                              errorMessage = 'Invalid credentials. Please try again.';
+                            });
+                          }
+                        },
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        )
+                            : const Text(
+                          'LOG IN',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -119,7 +198,6 @@ class _HomeScreenState extends State<HomeScreen> {
       },
     ) ?? false;
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -180,22 +258,23 @@ class _HomeScreenState extends State<HomeScreen> {
                         Text(
                           'Digital web is ready',
                           style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.pinkAccent,
-                              fontWeight: FontWeight.bold
+                            fontSize: 18,
+                            color: Colors.pinkAccent,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
                     IconButton(
                       icon: const Icon(Icons.notifications, color: Colors.white70),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => NotificationsPage()),
-                          );
-                        }
-
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationsPage(),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -203,6 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
+          // Main spider web with icons
           Center(
             child: SizedBox(
               width: 300,
@@ -211,29 +291,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 clipBehavior: Clip.none,
                 alignment: Alignment.center,
                 children: [
-              Padding(
-              padding: const EdgeInsets.only(top: 45), // adjust value here
-              child: Image.asset(
-                'assets/home/Vector (1).png',
-                width: 350,
-                height: 350,
-              ),
-            ),
-
-
-
-
-
-                  // Spider leg icons
+                  Padding(
+                    padding: const EdgeInsets.only(top: 45),
+                    child: Image.asset(
+                      'assets/home/Vector (1).png',
+                      width: 350,
+                      height: 350,
+                    ),
+                  ),
                   ..._buildSpiderLegsWithIcons(),
                 ],
               ),
             ),
           ),
-
-
         ],
       ),
+
+      // Floating action button for adding apps
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.pinkAccent,
         child: const Icon(Icons.add, color: Colors.white),
@@ -253,6 +327,8 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+
+      // Bottom navigation bar
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,
@@ -261,13 +337,13 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children:  [
+            children: [
               IconButton(
-                icon: Icon(Icons.home, color: Colors.white),
+                icon: const Icon(Icons.home, color: Colors.white),
                 onPressed: null,
               ),
               IconButton(
-                icon: Icon(Icons.settings, color: Colors.white),
+                icon: const Icon(Icons.settings, color: Colors.white),
                 onPressed: () {
                   Navigator.push(
                     context,

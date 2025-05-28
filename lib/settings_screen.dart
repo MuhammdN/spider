@@ -113,7 +113,7 @@ class SettingsScreen extends StatelessWidget {
         if (label == 'My Account') {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const MyAccountScreen()),
+            MaterialPageRoute(builder: (context) => MyAccountScreen()),
           );
         } else if (label == 'My Apps') {
           Navigator.push(
