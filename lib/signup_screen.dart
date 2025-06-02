@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-const String baseUrl = 'https://716521aa-e0e5-4764-9178-f5458b110f59-00-22sbkdnw63fzr.pike.replit.dev';
+const String baseUrl = 'https://my-backend-production-d82c.up.railway.app';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});

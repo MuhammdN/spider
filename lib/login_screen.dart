@@ -4,21 +4,29 @@ import 'dart:convert';
 import 'package:spider/signup_screen.dart';
 import 'ForgotPasswordScreen.dart';
 import 'home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-const String baseUrl = 'https://716521aa-e0e5-4764-9178-f5458b110f59-00-22sbkdnw63fzr.pike.replit.dev';
+const String baseUrl = 'https://my-backend-production-d82c.up.railway.app';
 
-// Create a simple state management class
 class UserSession {
   static String? _userId;
+  static String? _userName;
+  static String? _userEmail;
 
   static String? get userId => _userId;
+  static String? get userName => _userName;
+  static String? get userEmail => _userEmail;
 
-  static void setUserId(String id) {
+  static void setUserData(String id, String name, String email) {
     _userId = id;
+    _userName = name;
+    _userEmail = email;
   }
 
   static void clear() {
     _userId = null;
+    _userName = null;
+    _userEmail = null;
   }
 }
 
@@ -37,10 +45,63 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
-  // Validation messages
-  static const String emailRequired = 'Please enter your email';
-  static const String emailInvalid = 'Please enter a valid email';
-  static const String passwordRequired = 'Please enter a password';
+  static const String _rememberMeKey = 'rememberMe';
+  static const String _emailKey = 'savedEmail';
+  static const String _passwordKey = 'savedPassword';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final shouldRemember = prefs.getBool(_rememberMeKey) ?? false;
+
+      if (shouldRemember) {
+        final savedEmail = prefs.getString(_emailKey);
+        final savedPassword = prefs.getString(_passwordKey);
+
+        if (savedEmail != null && savedPassword != null) {
+          setState(() {
+            rememberMe = true;
+            emailController.text = savedEmail;
+            passwordController.text = savedPassword;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading saved credentials: $e');
+    }
+  }
+
+  Future<void> _saveCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (rememberMe) {
+        await prefs.setBool(_rememberMeKey, true);
+        await prefs.setString(_emailKey, emailController.text.trim());
+        await prefs.setString(_passwordKey, passwordController.text);
+      } else {
+        await _clearSavedCredentials();
+      }
+    } catch (e) {
+      print('Error saving credentials: $e');
+    }
+  }
+
+  Future<void> _clearSavedCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_rememberMeKey);
+      await prefs.remove(_emailKey);
+      await prefs.remove(_passwordKey);
+    } catch (e) {
+      print('Error clearing credentials: $e');
+    }
+  }
 
   Future<void> loginUser() async {
     if (!_formKey.currentState!.validate()) return;
@@ -50,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final url = Uri.parse('$baseUrl/login'); // Adjust endpoint as needed
+      final url = Uri.parse('$baseUrl/login');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -61,16 +122,23 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       final responseData = jsonDecode(response.body);
-      print('Full Login Response: $responseData'); // 👈 Debug print
+      print('Full Login Response: $responseData');
 
       if (response.statusCode == 200) {
-        // Check if user ID exists inside 'user' object
-        if (responseData['user'] != null && responseData['user']['_id'] != null) {
-          UserSession.setUserId(responseData['user']['_id'].toString());
-          print('Stored User ID: ${UserSession.userId}');
-        } else {
-          print('User ID not found in response');
+        if (responseData['user'] != null) {
+          final user = responseData['user'];
+          UserSession.setUserData(
+              user['_id'].toString(),
+              user['name'] ?? user['email']?.split('@').first ?? 'User',
+              user['email'] ?? ''
+          );
+          print('User Data Stored:');
+          print('ID: ${UserSession.userId}');
+          print('Name: ${UserSession.userName}');
+          print('Email: ${UserSession.userEmail}');
         }
+
+        await _saveCredentials();
 
         Navigator.pushReplacement(
           context,
@@ -82,6 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       _showErrorDialog('Network error occurred. Please try again.');
+      print('Login error: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -108,13 +177,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String? _validateEmail(String? value) {
-    if (value == null || value.trim().isEmpty) return emailRequired;
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) return emailInvalid;
+    if (value == null || value.trim().isEmpty) return 'Please enter your email';
+    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+      return 'Please enter a valid email';
+    }
     return null;
   }
 
   String? _validatePassword(String? value) {
-    if (value == null || value.isEmpty) return passwordRequired;
+    if (value == null || value.isEmpty) return 'Please enter a password';
     return null;
   }
 
@@ -124,7 +195,6 @@ class _LoginScreenState extends State<LoginScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Background Image
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -135,8 +205,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-
-          // Pink Glow Top Right
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -152,8 +220,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-
-          // Blue Glow Bottom Left
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -169,8 +235,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-
-          // Diagonal Black Glow
           Center(
             child: Transform.rotate(
               angle: 0.5,
@@ -191,8 +255,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-
-          // Login Content
           Padding(
             padding: const EdgeInsets.only(top: 100),
             child: Center(

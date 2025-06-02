@@ -4,7 +4,7 @@ import 'dart:convert';
 
 import 'EditAccountScreen.dart';
 import 'login_screen.dart'; // for UserSession
-const String baseUrl = 'https://716521aa-e0e5-4764-9178-f5458b110f59-00-22sbkdnw63fzr.pike.replit.dev/';
+const String baseUrl = 'https://my-backend-production-d82c.up.railway.app';
 
 class MyAccountScreen extends StatefulWidget {
   const MyAccountScreen({super.key});

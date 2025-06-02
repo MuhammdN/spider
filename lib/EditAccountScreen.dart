@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'login_screen.dart'; // for UserSession
-const String baseUrl = 'https://716521aa-e0e5-4764-9178-f5458b110f59-00-22sbkdnw63fzr.pike.replit.dev';
+const String baseUrl = 'https://my-backend-production-d82c.up.railway.app';
 
 class EditAccountScreen extends StatefulWidget {
   const EditAccountScreen({super.key});
@@ -38,7 +38,7 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
         final data = jsonDecode(response.body);
         _nameController.text = data['fullName'] ?? '';
         _emailController.text = data['email'] ?? '';
-        _passwordController.text = data['password'] ?? ''; // Now shows password
+        _passwordController.text = ''; // Keep password field empty for security
       } else {
         print('Failed to load user: ${response.body}');
       }
@@ -53,16 +53,6 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
     final userId = UserSession.userId;
     if (userId == null) return;
 
-    if (_passwordController.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Password must be at least 6 characters'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
     final body = {
       "fullName": _nameController.text,
       "email": _emailController.text,
@@ -70,7 +60,7 @@ class _EditAccountScreenState extends State<EditAccountScreen> {
     };
 
     try {
-      final url = Uri.parse('$baseUrl/users/$userId');
+      final url = Uri.parse('$baseUrl/user/$userId');
       final response = await http.put(
         url,
         headers: {'Content-Type': 'application/json'},

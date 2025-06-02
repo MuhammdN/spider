@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:spider/settings_screen.dart';
+import 'package:android_intent_plus/android_intent.dart';
 import 'add_app_screen.dart';
+import 'login_screen.dart';
 import 'notifications_page.dart';
 import 'social_app_screen.dart';
 import 'dart:math';
 import '../app_data.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -26,12 +29,8 @@ class _HomeScreenState extends State<HomeScreen> {
     Colors.green,
   ];
 
-  // Login function that can be reused
   Future<bool> _authenticateUser(String email, String password) async {
-    // Simulate API call delay
     await Future.delayed(const Duration(seconds: 1));
-
-    // Basic validation - in real app, this would call your authentication API
     if (email.isNotEmpty && password.isNotEmpty) {
       return true;
     }
@@ -61,7 +60,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Header with close button
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -80,7 +78,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Error message if any
                     if (errorMessage != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 16),
@@ -93,7 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
 
-                    // Email field
                     TextFormField(
                       controller: emailController,
                       decoration: InputDecoration(
@@ -108,7 +104,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Password field with visibility toggle
                     TextFormField(
                       controller: passwordController,
                       obscureText: obscurePassword,
@@ -136,7 +131,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 24),
 
-                    // Login button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -199,13 +193,58 @@ class _HomeScreenState extends State<HomeScreen> {
     ) ?? false;
   }
 
+  Future<void> _launchApp(SocialApp app) async {
+    bool launched = false;
+
+    // Try all possible URL schemes
+    for (String url in app.launchUrls) {
+      try {
+        if (await canLaunchUrl(Uri.parse(url))) {
+          await launchUrl(Uri.parse(url));
+          launched = true;
+          break;
+        }
+      } catch (e) {
+        debugPrint('Failed to launch with $url: $e');
+      }
+    }
+
+    if (!launched) {
+      // Try deep linking for Android
+      if (Theme.of(context).platform == TargetPlatform.android) {
+        try {
+          final intent = AndroidIntent(
+            action: 'action_view',
+            package: app.packageName,
+          );
+          await intent.launch();
+          launched = true;
+        } catch (e) {
+          debugPrint('Android intent failed: $e');
+        }
+      }
+
+      // Fallback to web URL
+      if (!launched) {
+        if (await canLaunchUrl(Uri.parse(app.fallbackUrl))) {
+          await launchUrl(Uri.parse(app.fallbackUrl));
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Could not launch ${app.name}')),
+            );
+          }
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Background image
           Positioned.fill(
             child: Image.asset(
               'assets/home/Vector.png',
@@ -213,7 +252,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Background gradients
           Container(
             width: double.infinity,
             height: double.infinity,
@@ -239,7 +277,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // Header section
           Column(
             children: [
               const SizedBox(height: 60),
@@ -248,11 +285,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    // In the build method of _HomeScreenState, replace the welcome text:
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
-                          'Welcome, John',
+                          'Welcome, ${UserSession.userName ?? "User"}',
                           style: TextStyle(fontSize: 22, color: Colors.white70),
                         ),
                         Text(
@@ -282,7 +320,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
 
-          // Main spider web with icons
           Center(
             child: SizedBox(
               width: 300,
@@ -307,7 +344,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
 
-      // Floating action button for adding apps
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.pinkAccent,
         child: const Icon(Icons.add, color: Colors.white),
@@ -328,7 +364,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      // Bottom navigation bar
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
         notchMargin: 8.0,
@@ -370,15 +405,17 @@ class _HomeScreenState extends State<HomeScreen> {
       double x = centerX + radius * cos(angle);
       double y = centerY + radius * sin(angle);
 
-      // Position adjustments for each leg
-      if (index == 6) { x -= 18; y -= -2; }
-      else if (index == 2) { x += 45; y -= 20; }
-      else if (index == 1) { x += 5; y -= 14; }
-      else if (index == 5) { x += 35; }
-      else if (index == 3) { x += 35; y += 10; }
-      else if (index == 4) { x += 33; y += 60; }
-      else if (index == 7) { x -= 55; y -= 30; }
-      else if (index == 0) { x -= 55; y -= 90; }
+      // Adjust positions for better visual alignment
+      switch (index) {
+        case 0: x -= 55; y -= 90; break;
+        case 1: x += 5; y -= 14; break;
+        case 2: x += 45; y -= 20; break;
+        case 3: x += 35; y += 10; break;
+        case 4: x += 33; y += 60; break;
+        case 5: x += 35; break;
+        case 6: x -= 18; y += 2; break;
+        case 7: x -= 55; y -= 30; break;
+      }
 
       if (index < selectedApps.length) {
         final app = selectedApps[index];
@@ -392,12 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 debugPrint('Tapped ${app.name}');
                 final shouldProceed = await _showLoginDialog(context, app.name);
                 if (shouldProceed && mounted) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => SocialAppScreen(appName: app.name),
-                    ),
-                  );
+                  await _launchApp(app);
                 }
               },
               borderRadius: BorderRadius.circular(20),

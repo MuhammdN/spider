@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../app_data.dart';
-import 'home_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class AddAppsScreen extends StatefulWidget {
@@ -14,19 +13,6 @@ class AddAppsScreen extends StatefulWidget {
 
 class _AddAppsScreenState extends State<AddAppsScreen> {
   late List<SocialApp> selectedApps;
-
-  final List<SocialApp> allSocialApps = [
-    SocialApp(name: 'Facebook', color: Color(0xFF3b5998), icon: FontAwesomeIcons.facebookF),
-    SocialApp(name: 'Instagram', color: Color(0xFFC13584), icon: FontAwesomeIcons.instagram),
-    SocialApp(name: 'X', color: Colors.black, icon: FontAwesomeIcons.xTwitter),
-    SocialApp(name: 'WhatsApp', color: Color(0xFF25D366), icon: FontAwesomeIcons.whatsapp),
-    SocialApp(name: 'Snapchat', color: Color(0xFFFFFC00), icon: FontAwesomeIcons.snapchatGhost),
-    SocialApp(name: 'LinkedIn', color: Color(0xFF0077B5), icon: FontAwesomeIcons.linkedinIn),
-    SocialApp(name: 'YouTube', color: Color(0xFFFF0000), icon: FontAwesomeIcons.youtube),
-    SocialApp(name: 'Telegram', color: Color(0xFF0088cc), icon: FontAwesomeIcons.telegram),
-    SocialApp(name: 'Pinterest', color: Color(0xFFE60023), icon: FontAwesomeIcons.pinterest),
-    SocialApp(name: 'Reddit', color: Color(0xFFFF5700), icon: FontAwesomeIcons.redditAlien),
-  ];
 
   @override
   void initState() {
@@ -90,7 +76,6 @@ class _AddAppsScreenState extends State<AddAppsScreen> {
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Background image
           Positioned.fill(
             child: Image.asset(
               'assets/splash/image 1-1.png',
@@ -99,7 +84,6 @@ class _AddAppsScreenState extends State<AddAppsScreen> {
             ),
           ),
 
-          // Pink glow (top right)
           Container(
             decoration: const BoxDecoration(
               gradient: RadialGradient(
@@ -111,7 +95,6 @@ class _AddAppsScreenState extends State<AddAppsScreen> {
             ),
           ),
 
-          // Blue glow (bottom left)
           Container(
             decoration: const BoxDecoration(
               gradient: RadialGradient(
@@ -123,11 +106,9 @@ class _AddAppsScreenState extends State<AddAppsScreen> {
             ),
           ),
 
-          // Main content
           SafeArea(
             child: Column(
               children: [
-                // Custom AppBar
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
@@ -153,7 +134,6 @@ class _AddAppsScreenState extends State<AddAppsScreen> {
                   ),
                 ),
 
-                // Selected apps count
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: Text(
@@ -165,7 +145,6 @@ class _AddAppsScreenState extends State<AddAppsScreen> {
                   ),
                 ),
 
-                // Apps List
                 Expanded(
                   child: ListView.builder(
                     padding: const EdgeInsets.all(16.0),
